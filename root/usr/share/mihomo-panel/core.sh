@@ -21,6 +21,8 @@ prepare() {
 # a config that would clobber user settings on upgrade.
 ensure_uci() {
 	uci -q get mihomo.main >/dev/null 2>&1 && return 0
+	# uci set 需要 /etc/config/mihomo 已存在，否则会因文件缺失而失败。
+	[ -f /etc/config/mihomo ] || : > /etc/config/mihomo 2>/dev/null || return 1
 	uci set mihomo.main=mihomo && uci commit mihomo
 }
 
