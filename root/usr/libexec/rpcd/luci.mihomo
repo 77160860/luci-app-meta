@@ -96,7 +96,7 @@ case "$2" in
 		json_init
 		json_add_boolean ok 1
 		json_add_string error_code "$config_error"
-		json_add_string version "$(run_timeout 2 "$BIN" -v 2>/dev/null | head -n 1 | awk '{for(i=1;i<=NF;i++) if($i ~ /^v[0-9]/){print $i; exit}}')"
+		json_add_string version "$(core_version "$BIN")"
 		json_add_string config "$CONFIG"
 		json_add_string revision "$([ -z "$config_error" ] && config_revision)"
 		json_add_string pid "$pid"

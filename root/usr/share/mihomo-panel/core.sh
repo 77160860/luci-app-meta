@@ -35,6 +35,17 @@ load_settings() {
 	[ -n "$SERVICE_USER" ] || SERVICE_USER=root
 }
 
+# 解析 mihomo 版本。输出形如 "Mihomo Meta <版本> <os> <arch> with <go> <构建时间>"；
+# 优先取形如 v1.19.11 / 1.19.11 的版本号，否则回退到第三个字段（如 alpha-xxxx）。
+core_version() {
+	local bin="$1" out ver
+	[ -x "$bin" ] || return 0
+	out=$(run_timeout 3 "$bin" -v 2>&1 | head -n 1)
+	ver=$(printf '%s\n' "$out" | awk '{for(i=1;i<=NF;i++) if($i ~ /^v?[0-9]+[.-]/){print $i; exit}}')
+	[ -n "$ver" ] || ver=$(printf '%s\n' "$out" | awk '{print $3}')
+	printf '%s' "$ver"
+}
+
 settings() {
 	load_settings
 	case "$CONFIG" in /*) ;; *) ERROR='config_path_invalid'; return 1;; esac
@@ -336,7 +347,7 @@ update_core() {
 	fi
 	# 校验下载到的二进制是否可用
 	if [ -s "$tmp" ] && chmod +x "$tmp" && "$tmp" -v >/dev/null 2>&1; then
-		new_ver=$("$tmp" -v 2>/dev/null | head -n 1 | awk '{for(i=1;i<=NF;i++) if($i ~ /^v[0-9]/){print $i; exit}}')
+		new_ver=$(core_version "$tmp")
 		# 服务可能尚未安装/配置，停止与重启失败均忽略。
 		[ -x "$INIT" ] && service_do stop >/dev/null 2>&1
 		mv -f "$tmp" "$BIN" || { ERROR=config_save_failed; DETAILS='无法写入 /usr/bin/mihomo'; return 1; }
