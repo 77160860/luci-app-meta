@@ -14,7 +14,7 @@ reply() {
 
 case "$1" in
 	list)
-		printf '%s\n' '{"status":{},"read":{},"logs":{},"cache":{},"check":{"content":"String"},"save":{"content":"String","revision":"String"},"action":{"name":"String","revision":"String"},"autostart":{"enabled":true},"upload":{"content":"String"},"download":{"url":"String"},"update_core":{"url":"String"}}'
+		printf '%s\n' '{"status":{},"read":{},"logs":{},"cache":{},"check":{"content":"String"},"save":{"content":"String","revision":"String"},"action":{"name":"String","revision":"String"},"autostart":{"enabled":true},"upload":{"content":"String"},"download":{"url":"String"},"update_core":{"url":"String"},"save_url":{"key":"String","url":"String"}}'
 		exit 0;;
 	call) ;;
 	*) exit 1;;
@@ -69,6 +69,21 @@ case "$2" in
 		rm -f "$RUN/lock/pid"
 		/usr/libexec/mihomo-panel-worker update_core "$url" </dev/null >/dev/null 2>&1 &
 		reply 1 operation_queued
+		exit 0;;
+	save_url)
+		key='' url=''
+		payload=$(head -c 4096)
+		json_load "$payload" 2>/dev/null || { reply 0 request_invalid; exit 0; }
+		json_get_var key key
+		json_get_var url url
+		# 仅允许写入这两个已知字段，且服务端可靠创建 UCI 文件/节，规避前端首次运行时节不存在导致的保存失败。
+		case "$key" in core_url|download_url) ;; *) reply 0 request_invalid; exit 0;; esac
+		ensure_uci || { reply 0 config_save_failed; exit 0; }
+		if uci set "mihomo.main.$key=$url" && uci commit mihomo; then
+			reply 1 config_saved
+		else
+			reply 0 config_save_failed
+		fi
 		exit 0;;
 	cache)
 		CACHE=''

@@ -6,7 +6,7 @@
       "uci": ["mihomo"]
     },
     "write": {
-      "ubus": { "luci.mihomo": ["check", "save", "action", "autostart", "upload", "download", "update_core"] },
+      "ubus": { "luci.mihomo": ["check", "save", "action", "autostart", "upload", "download", "update_core", "save_url"] },
       "uci": ["mihomo"]
     }
   }

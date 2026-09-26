@@ -25,6 +25,7 @@ const api = {
   action: method('action', ['name', 'revision']),
   autostart: method('autostart', ['enabled']),
   updateCore: method('update_core', ['url'], 30000),
+  saveUrl: method('save_url', ['key', 'url']),
 };
 
 const MAX_SIZE = 1048576;
@@ -452,7 +453,7 @@ return view.extend({
         E('input', {
           type: 'text',
           class: 'cbi-input-text',
-          placeholder: 'https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64-vX.Y.Z.gz',
+          placeholder: 'https://gh-proxy.org/github.com/77160860/proxy/releases/download/mihomo/mihomo-linux-arm64',
           id: 'custom-core-url',
           value: uci.get('mihomo', 'main', 'core_url') || ''
         }),
@@ -461,11 +462,9 @@ return view.extend({
           if (!url) return alert('请填写核心下载地址');
           this.notify('正在后台下载核心，请稍候...');
           try {
-            uci.set('mihomo', 'main', 'core_url', url);
-            await uci.save();
-            await uci.apply();
+            await api.saveUrl('core_url', url);
           } catch (e) {
-            console.warn('UCI 保存失败:', e);
+            console.warn('保存下载地址失败:', e);
           }
           await this.queueCore(url);
         }, 'warning')
@@ -474,7 +473,7 @@ return view.extend({
         E('input', {
           type: 'text',
           class: 'cbi-input-text',
-          placeholder: 'https://example.com/mihomo/config.yaml',
+          placeholder: 'https://cdn.jsdelivr.net/gh/77160860/proxy/mihomo-linux.yaml',
           id: 'custom-download-url',
           value: uci.get('mihomo', 'main', 'download_url') || ''
         }),
@@ -483,11 +482,9 @@ return view.extend({
           if (!url) return alert('请填写配置下载地址');
           this.notify('正在拉取配置文件...');
           try {
-            uci.set('mihomo', 'main', 'download_url', url);
-            await uci.save();
-            await uci.apply();
+            await api.saveUrl('download_url', url);
           } catch (e) {
-            console.warn('UCI 保存失败:', e);
+            console.warn('保存下载地址失败:', e);
           }
           try {
             const r = await fetch(url);
