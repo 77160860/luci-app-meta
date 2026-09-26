@@ -291,12 +291,50 @@ start_service() {
 	return 1
 }
 
+# 下载并替换 mihomo 核心。运行在后台 worker 中，不受 XHR/ubus 超时限制。
+update_core() {
+	local url="$1" tmp="/tmp/mihomo.new" new_ver
+	[ -n "$url" ] || { ERROR=url_invalid; DETAILS='下载地址为空'; return 1; }
+	rm -f "$tmp" "$tmp.raw"
+	# 优先使用 curl 支持 302 重定向及 SSL；若无则使用 wget。超时放宽到 300s。
+	if command -v curl >/dev/null 2>&1; then
+		curl -sSL -k -m 300 -o "$tmp" "$url" >/dev/null 2>&1
+	else
+		wget -q --no-check-certificate -T 300 -O "$tmp" "$url" >/dev/null 2>&1
+	fi
+	# 若下载到 gzip 压缩的核心则尝试解压
+	if [ -s "$tmp" ] && gzip -t "$tmp" >/dev/null 2>&1; then
+		gzip -dc "$tmp" > "$tmp.raw" 2>/dev/null && mv -f "$tmp.raw" "$tmp"
+	fi
+	# 校验下载到的二进制是否可用
+	if [ -s "$tmp" ] && chmod +x "$tmp" && "$tmp" -v >/dev/null 2>&1; then
+		new_ver=$("$tmp" -v 2>/dev/null | head -n 1 | awk '{for(i=1;i<=NF;i++) if($i ~ /^v[0-9]/){print $i; exit}}')
+		# 服务可能尚未安装/配置，停止与重启失败均忽略。
+		[ -x "$INIT" ] && service_do stop >/dev/null 2>&1
+		mv -f "$tmp" "$BIN" || { ERROR=config_save_failed; DETAILS='无法写入 /usr/bin/mihomo'; return 1; }
+		chmod +x "$BIN"
+		[ -x "$INIT" ] && service_do restart >/dev/null 2>&1
+		DETAILS="核心已更新为：${new_ver:-未知版本}"
+		return 0
+	fi
+	# 下载失败时保留文件在 /tmp/mihomo.new 方便排查
+	ERROR=download_failed
+	DETAILS='核心下载失败，请检查网络或地址后重试'
+	return 1
+}
+
 worker() {
 	local action="$1" expected="${2:-}"
 	printf '%s' "$$" > "$RUN/lock/pid"
 	trap 'worker_exit' EXIT
 	trap 'job error operation_interrupted; exit 1' HUP INT TERM
 	job running operation_running '' "$action"
+	# 核心下载须在核心/配置尚未就绪时也能运行，绕过 action_settings。
+	if [ "$action" = update_core ]; then
+		update_core "$expected" || { job error "$ERROR" "$DETAILS"; return 1; }
+		job success core_updated "$DETAILS"
+		return 0
+	fi
 	action_settings "$action" || { job error "$ERROR"; return 1; }
 	case "$action" in apply)
 		[ "$expected" = "$(config_revision)" ] || { job error config_changed; return 1; };;

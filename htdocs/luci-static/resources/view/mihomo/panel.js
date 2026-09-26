@@ -24,7 +24,7 @@ const api = {
   check: method('check', ['content']),
   action: method('action', ['name', 'revision']),
   autostart: method('autostart', ['enabled']),
-  updateCore: method('update_core', ['url'], 120000),
+  updateCore: method('update_core', ['url'], 30000),
 };
 
 const MAX_SIZE = 1048576;
@@ -62,7 +62,7 @@ const messages = {
   autostart_updated: '开机启动设置已更新',
   autostart_failed: '无法更改开机启动设置',
   method_unknown: '未知方法',
-  core_updated: '核心更新成功，服务已重启',
+  core_updated: '核心更新成功',
   download_failed: '核心下载失败，请检查下载地址和网络连通性',
   url_invalid: '下载地址无效，请填写正确的 URL',
   service_status_failed: '无法确认服务进程状态，操作已中止',
@@ -86,6 +86,7 @@ const actions = {
   restart: '重启',
   cache_reset: '清理缓存',
   cache_reset_start: '清理缓存并启动',
+  update_core: '更新核心',
 };
 
 // 提示条配色跟随触发它的按钮
@@ -240,6 +241,13 @@ return view.extend({
 
   async queue(name, revision) {
     checked(await api.action(name, revision || ''));
+    this.status.busy = true;
+    this.lastJob = null;
+  },
+
+  // 核心下载耗时较长，交由后台任务处理，结果由状态轮询回显。
+  async queueCore(url) {
+    checked(await api.updateCore(url));
     this.status.busy = true;
     this.lastJob = null;
   },
@@ -427,8 +435,7 @@ return view.extend({
             const url = (inputEl && inputEl.value.trim()) || uci.get('mihomo', 'main', 'core_url');
             if (!url) return alert('请先前往「配置」标签页填写下载核心地址');
             this.notify('正在后台下载并更新核心，请稍候...');
-            const res = checked(await api.updateCore(url));
-            this.notify(res.details || messages.core_updated);
+            await this.queueCore(url);
           }, 'warning'),
           this.button('打开面板', () => {
             const { port, secret } = parseClashApi(this.editor.value || '');
@@ -452,7 +459,7 @@ return view.extend({
         this.button('下载核心', async () => {
           const url = document.getElementById('custom-core-url').value.trim();
           if (!url) return alert('请填写核心下载地址');
-          this.notify('正在下载核心，请稍候...');
+          this.notify('正在后台下载核心，请稍候...');
           try {
             uci.set('mihomo', 'main', 'core_url', url);
             await uci.save();
@@ -460,8 +467,7 @@ return view.extend({
           } catch (e) {
             console.warn('UCI 保存失败:', e);
           }
-          const res = checked(await api.updateCore(url));
-          this.notify(res.details || messages.core_updated);
+          await this.queueCore(url);
         }, 'warning')
       ])),
       field('下载配置文件', E('div', {}, [

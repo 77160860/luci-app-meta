@@ -62,31 +62,11 @@ case "$2" in
 		json_get_var url url
 		[ -n "$url" ] || { reply 0 'url_invalid'; exit 0; }
 		lock || { reply 0 operation_busy; exit 0; }
-		trap 'unlock' EXIT
-		tmp="/tmp/mihomo.new"
-		rm -f "$tmp"
-		# 优先使用 curl 支持 302 重定向及 SSL；若无则使用 wget
-		if command -v curl >/dev/null 2>&1; then
-			curl -sSL -k -m 120 -o "$tmp" "$url"
-		else
-			wget -q --no-check-certificate -T 120 -O "$tmp" "$url"
-		fi
-		# 若下载到 gzip 压缩的核心则尝试解压
-		if [ -s "$tmp" ] && gzip -t "$tmp" >/dev/null 2>&1; then
-			gzip -dc "$tmp" > "$tmp.raw" 2>/dev/null && mv -f "$tmp.raw" "$tmp"
-		fi
-		# 校验下载到的二进制是否可用
-		if [ -s "$tmp" ] && chmod +x "$tmp" && "$tmp" -v >/dev/null 2>&1; then
-			new_ver=$("$tmp" -v 2>/dev/null | head -n 1 | awk '{for(i=1;i<=NF;i++) if($i ~ /^v[0-9]/){print $i; exit}}')
-			service_do stop >/dev/null 2>&1
-			mv -f "$tmp" "$BIN" || { service_do start >/dev/null 2>&1; reply 0 'config_save_failed'; exit 0; }
-			chmod +x "$BIN"
-			service_do restart >/dev/null 2>&1
-			reply 1 'core_updated' "核心已更新为：${new_ver:-未知版本}"
-		else
-			# 下载失败时保留文件在 /tmp/mihomo.new 方便排查
-			reply 0 'download_failed' "核心下载失败，请检查网络重试"
-		fi
+		# 下载大体积核心耗时较长，交由后台 worker 处理，避免 XHR/ubus 超时；
+		# worker 退出时会自行释放锁，这里不能 trap unlock。
+		job queued operation_queued
+		/usr/libexec/mihomo-panel-worker update_core "$url" </dev/null >/dev/null 2>&1 &
+		reply 1 operation_queued
 		exit 0;;
 	cache)
 		CACHE=''
