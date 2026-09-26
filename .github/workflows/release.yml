@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: '发布版本号（留空默认为 v1.0）'
+        description: '发布版本号（留空默认为 v1.2）'
         required: false
         default: ''
         type: string
@@ -40,7 +40,7 @@ jobs:
         run: |
           USER_INPUT="${{ inputs.tag }}"
           if [ -z "$USER_INPUT" ]; then
-            PKG_VER="v1.0"
+            PKG_VER="v1.2"
           else
             if [[ "$USER_INPUT" =~ ^v ]]; then
               PKG_VER="$USER_INPUT"

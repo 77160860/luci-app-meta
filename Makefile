@@ -7,8 +7,8 @@ LUCI_PKGARCH:=all
 
 PKG_LICENSE:=MIT
 PKG_NAME:=luci-app-meta
-PKG_VERSION:=1.0
-PKG_RELEASE:=1
+PKG_VERSION:=1.2
+PKG_RELEASE:=3
 
 # 允许外部环境变量或 SDK 覆盖版本号
 ifneq ($(LUCI_META_VERSION),)

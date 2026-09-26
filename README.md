@@ -20,11 +20,11 @@
 本面板**不依赖** mihomo 内核包，可直接安装；内核由你自行下载（面板「配置」页提供下载核心地址，或手动放置到 `/usr/bin/mihomo`）。
 
 ```sh
-# opkg
-opkg install /tmp/luci-app-meta_*.ipk   # 或你上传的 /tmp/upload.ipk
+# opkg（IPK 包，当前版本 1.2-3）
+opkg install /tmp/luci-app-meta_1.2-3_all.ipk   # 或你上传的 /tmp/upload.ipk
 
-# APK
-apk add --allow-untrusted /tmp/luci-app-meta-*.apk
+# APK（当前版本 1.2-r3）
+apk add --allow-untrusted /tmp/luci-app-meta-1.2-r3.apk
 
 /etc/init.d/rpcd restart
 ```
@@ -43,11 +43,16 @@ apk add --allow-untrusted /tmp/luci-app-meta-*.apk
 面板默认使用以下路径：
 
 ```text
-/usr/bin/mihomo         (内核，由 mihomo 核心包提供)
-/etc/init.d/mihomo      (procd 服务，由本面板提供)
-/etc/config/mihomo      (UCI，可选，缺失时按默认值处理并按需自动创建 main 段)
-/etc/mihomo/config.yaml (工作目录与主配置)
+/usr/bin/mihomo                  (内核，自行下载或手动放置)
+/etc/init.d/mihomo               (procd 服务，由本面板提供)
+/etc/mihomo/core.sh              (面板共享后端脚本，由 rpcd 插件与后台 worker 载入)
+/usr/libexec/rpcd/luci.mihomo    (rpcd 插件)
+/usr/libexec/mihomo-panel-worker (后台任务 worker)
+/etc/config/mihomo               (UCI，可选，缺失时按默认值处理并按需自动创建 main 段)
+/etc/mihomo/config.yaml          (工作目录与主配置)
 ```
+
+> 面板共享后端脚本 `core.sh` 随包安装在 `/etc/mihomo/` 下，与工作目录、主配置同处一处，便于集中管理；rpcd 插件与后台 worker 均从 `/etc/mihomo/core.sh` 载入。该文件由软件包管理，卸载时移除，不影响你在同目录下的 `config.yaml`、`cache.db` 等数据。
 
 > 本面板随包安装 `/etc/init.d/mihomo` 这个 procd 启动脚本，服务名与实例名均为 `mihomo`，因此面板能通过 procd/ubus 启停并查询状态。它读取 UCI 的 `enabled`/`conffile`/`workdir` 运行 `mihomo -d <workdir> -f <conffile>`，并把 stdout/stderr 送往系统日志（`logread -e mihomo` 可读）。像 `mihomo-meta` 这种只装二进制、不带 init 的核心包正好与之配合。若你的内核包本身已提供 `/etc/init.d/mihomo`，安装时会发生文件冲突，请二选一。
 
@@ -128,7 +133,7 @@ mihomo -t -d <workdir> -f <待校验文件>
 
 1. 将项目提交到 GitHub，保持 `Makefile`、`htdocs`、`root` 和 `.github` 位于仓库根目录。
 2. 进入 **Actions → Release → Run workflow**。
-3. 选择构建分支，填写新标签（例如 `v1.0`，留空默认 `v1.0`）。
+3. 选择构建分支，填写新标签（例如 `v1.2`，留空默认 `v1.2`）。
 4. 按需勾选 `prerelease`，然后运行工作流。
 
 发布 Tag 固定为 `meta`。安装包为 `noarch`，面板自身不含架构相关的二进制文件；mihomo 内核和其他运行依赖由设备的软件源提供。

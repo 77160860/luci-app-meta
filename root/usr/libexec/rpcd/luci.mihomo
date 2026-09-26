@@ -2,7 +2,7 @@
 # shellcheck shell=busybox
 # shellcheck disable=SC1091
 . /usr/share/libubox/jshn.sh
-. /usr/share/mihomo-panel/core.sh
+. /etc/mihomo/core.sh
 
 reply() {
 	json_init

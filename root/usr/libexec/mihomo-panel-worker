@@ -2,6 +2,6 @@
 # shellcheck shell=busybox
 # shellcheck disable=SC1091
 . /usr/share/libubox/jshn.sh
-. /usr/share/mihomo-panel/core.sh
+. /etc/mihomo/core.sh
 prepare || exit 1
 worker "$1" "${2:-}"
