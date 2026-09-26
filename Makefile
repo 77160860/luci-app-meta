@@ -17,7 +17,8 @@ endif
 
 define Build/Prepare/luci-app-meta
 	chmod 0755 $(PKG_BUILD_DIR)/root/usr/libexec/rpcd/luci.mihomo \
-		$(PKG_BUILD_DIR)/root/usr/libexec/mihomo-panel-worker
+		$(PKG_BUILD_DIR)/root/usr/libexec/mihomo-panel-worker \
+		$(PKG_BUILD_DIR)/root/etc/init.d/mihomo
 endef
 
 include $(TOPDIR)/feeds/luci/luci.mk

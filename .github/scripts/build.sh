@@ -56,6 +56,7 @@ find "$MAIN" -type d -exec chmod 0755 {} +
 find "$MAIN" -type f -exec chmod 0644 {} +
 [ -f "$MAIN/usr/libexec/rpcd/luci.mihomo" ] && chmod 0755 "$MAIN/usr/libexec/rpcd/luci.mihomo"
 [ -f "$MAIN/usr/libexec/mihomo-panel-worker" ] && chmod 0755 "$MAIN/usr/libexec/mihomo-panel-worker"
+[ -f "$MAIN/etc/init.d/mihomo" ] && chmod 0755 "$MAIN/etc/init.d/mihomo"
 # ==========================================
 # 4. 构建 OpenWrt APK (v3)
 # ==========================================
