@@ -65,6 +65,8 @@ case "$2" in
 		# 下载大体积核心耗时较长，交由后台 worker 处理，避免 XHR/ubus 超时；
 		# worker 退出时会自行释放锁，这里不能 trap unlock。
 		job queued operation_queued
+		# 交接给后台 worker：清掉本进程 pid，锁在 worker 写入自身 pid 前由 start 宽限期守护
+		rm -f "$RUN/lock/pid"
 		/usr/libexec/mihomo-panel-worker update_core "$url" </dev/null >/dev/null 2>&1 &
 		reply 1 operation_queued
 		exit 0;;
@@ -89,7 +91,7 @@ case "$2" in
 		boot=0
 		"$INIT" enabled >/dev/null 2>&1 && [ "$(uci -q get mihomo.main.enabled)" = 1 ] && boot=1
 		busy=0
-		[ -d "$RUN/lock" ] && busy=1
+		lock_busy && busy=1
 		job_data=$(cat "$RUN/job.json" 2>/dev/null)
 		json_init
 		json_add_boolean ok 1
@@ -149,6 +151,7 @@ case "$2" in
 			trap 'rm -f "$RUN/validation.yaml"; unlock' EXIT
 			printf '%s' "$content" > "$RUN/validation.yaml" || { reply 0 check_prepare_failed; exit 0; }
 			job queued operation_queued
+			rm -f "$RUN/lock/pid"
 			/usr/libexec/mihomo-panel-worker validate </dev/null >/dev/null 2>&1 &
 			trap - EXIT
 			reply 1 operation_queued
@@ -181,6 +184,7 @@ case "$2" in
 			fi;;
 		esac
 		job queued operation_queued
+		rm -f "$RUN/lock/pid"
 		/usr/libexec/mihomo-panel-worker "$name" "$revision" </dev/null >/dev/null 2>&1 &
 		reply 1 'operation_queued';;
 	autostart)

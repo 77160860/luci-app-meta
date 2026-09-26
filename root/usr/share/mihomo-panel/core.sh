@@ -52,11 +52,37 @@ action_settings() {
 }
 
 lock() {
-	mkdir "$RUN/lock" 2>/dev/null
+	if mkdir "$RUN/lock" 2>/dev/null; then
+		printf '%s' "$$" > "$RUN/lock/pid"
+		date +%s > "$RUN/lock/start"
+		return 0
+	fi
+	# 锁已存在：若持有者已消失（进程被杀/超时中断）则清理后重试一次
+	lock_busy && return 1
+	mkdir "$RUN/lock" 2>/dev/null || return 1
+	printf '%s' "$$" > "$RUN/lock/pid"
+	date +%s > "$RUN/lock/start"
+}
+
+# 返回 0 表示确有存活的持有者（真正忙）；否则清理陈旧锁并返回 1。
+# 兼顾 mkdir 与写入 pid 之间的短暂窗口，避免误清理刚建立的锁。
+lock_busy() {
+	[ -d "$RUN/lock" ] || return 1
+	local pid start now
+	pid=$(cat "$RUN/lock/pid" 2>/dev/null)
+	if [ -n "$pid" ]; then
+		kill -0 "$pid" 2>/dev/null && return 0
+	else
+		start=$(cat "$RUN/lock/start" 2>/dev/null)
+		now=$(date +%s)
+		[ -n "$start" ] && [ "$((now - start))" -lt 20 ] && return 0
+	fi
+	unlock
+	return 1
 }
 
 unlock() {
-	rm -f "$RUN/lock/pid"
+	rm -f "$RUN/lock/pid" "$RUN/lock/start"
 	rmdir "$RUN/lock" 2>/dev/null
 }
 
