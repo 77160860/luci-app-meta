@@ -315,7 +315,7 @@ return view.extend({
   updateStatus(status) {
     this.status = status;
     this.runtime.textContent = status.running ? '运行中 · PID ' + status.pid : '已停止';
-    this.version.textContent = status.version || '未检测到内核';
+    this.version.textContent = status.version ? 'mihomo ' + status.version : '未检测到内核';
     this.path.textContent = status.config || '未配置';
     if (!this.localBusy) {
       this.boot.checked = !!status.autostart;
