@@ -31,7 +31,7 @@ TITLE=$(sed -n 's/^LUCI_TITLE:=//p' "$SOURCE_DIR/Makefile" | tr -d '\r\n' || tru
 
 # OpenWrt 依赖声明转换
 DEPENDS_RAW=$(sed -n 's/^LUCI_DEPENDS:=//p' "$SOURCE_DIR/Makefile" | tr -d '+' | tr -d '\r\n' || true)
-[ -z "$DEPENDS_RAW" ] && DEPENDS_RAW="luci-base mihomo rpcd jshn jsonfilter curl"
+[ -z "$DEPENDS_RAW" ] && DEPENDS_RAW="luci-base rpcd jshn jsonfilter curl"
 
 # 构造 apk 依赖 (空格分隔) 与 opkg 依赖 (逗号分隔)
 APK_DEPENDS="$DEPENDS_RAW"

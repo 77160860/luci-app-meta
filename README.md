@@ -17,36 +17,26 @@
 
 ## 安装
 
-本面板依赖 mihomo 内核（提供 `/usr/bin/mihomo`）。若你使用的核心包是二进制包（例如自建的 `mihomo-meta`，其 `PROVIDES:=mihomo`），需要**先安装内核，再安装本面板**，否则 opkg 会报 `cannot find dependency mihomo`：
+本面板**不依赖** mihomo 内核包，可直接安装；内核由你自行下载（面板「配置」页提供下载核心地址，或手动放置到 `/usr/bin/mihomo`）。
 
 ```sh
-# 1) 先装内核（提供虚拟包 mihomo）
-opkg install /tmp/mihomo-meta_*.ipk
-
-# 2) 再装面板
+# opkg
 opkg install /tmp/luci-app-meta_*.ipk   # 或你上传的 /tmp/upload.ipk
 
-/etc/init.d/rpcd restart
-```
-
-APK 方式：
-
-```sh
+# APK
 apk add --allow-untrusted /tmp/luci-app-meta-*.apk
+
 /etc/init.d/rpcd restart
 ```
 
-若内核不是通过 opkg 安装、而是手动放到 `/usr/bin/mihomo`（opkg 数据库里没有 `mihomo` 记录），可跳过依赖检查安装面板：
+发布的 APK 未签名，安装时需要 `--allow-untrusted`。运行依赖为 `luci-base`、`rpcd`、`jshn`、`jsonfilter` 和 `curl`，由设备匹配的软件源安装。
 
-```sh
-opkg install --nodeps /tmp/luci-app-meta_*.ipk
-```
+安装后获取内核的两种方式：
 
-发布的 APK 未签名，安装时需要 `--allow-untrusted`。依赖为 `luci-base`、`mihomo`、`rpcd`、`jshn`、`jsonfilter` 和 `curl`，由设备匹配的软件源安装。
+- **面板下载**：进入 **配置** 标签页，在「下载核心地址」填入 mihomo 二进制（或 `.gz`）直链，点「下载核心」。后端用 curl/wget 下载，自动解压 `.gz`、校验 `mihomo -v` 可用后写入 `/usr/bin/mihomo` 并重启服务。
+- **手动放置**：将 mihomo 可执行文件放到 `/usr/bin/mihomo` 并 `chmod +x`。
 
-> 关于报错 `Packages for luci-app-meta found, but incompatible with the architectures configured`：这是 opkg 在直接安装本地 ipk 的依赖解析失败后，回退到软件源里查找 `luci-app-meta` 时的次要提示。本面板是 `all/noarch`，真正的原因是上面的 `mihomo` 依赖未满足；按上述顺序装好内核即可消除。
-
-> 若你的软件源中 mihomo 内核提供的虚拟包名不是 `mihomo`，请相应调整 `Makefile` 的 `LUCI_DEPENDS`，或用 `--nodeps` 安装。
+内核就位后，面板自带的 `/etc/init.d/mihomo` 即可启停服务。
 
 ## mihomo 服务配置
 
@@ -160,7 +150,7 @@ make package/luci-app-meta/compile V=s
 
 - **页面没有出现**：重启 `rpcd` 后重新登录 LuCI。
 - **配置校验失败**：根据页面显示的 mihomo 错误修改 YAML，确认 `conffile`、`workdir` 及引用的 geo/规则文件路径。
-- **依赖安装失败**：确认软件源提供的 mihomo 内核包名，必要时调整 `Makefile` 的 `LUCI_DEPENDS`。
+- **未检测到内核 / 无法启动**：确认已通过「配置」页下载核心或手动放置了 `/usr/bin/mihomo` 且可执行（`mihomo -v` 能输出版本）。
 - **操作长时间未结束**：检查 `/tmp/mihomo-panel/lock/pid` 对应的后台进程。确认进程已退出后，再处理锁和临时任务数据。
 
 临时任务数据位于 `/tmp/mihomo-panel/`，设备重启后会清除。

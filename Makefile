@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=Meta 配置与服务管理面板
 LUCI_DESCRIPTION:=mihomo(Clash.Meta) 配置与服务轻量管理面板
-LUCI_DEPENDS:=+luci-base +mihomo +rpcd +jshn +jsonfilter +curl
+LUCI_DEPENDS:=+luci-base +rpcd +jshn +jsonfilter +curl
 LUCI_PKGARCH:=all
 
 PKG_LICENSE:=MIT
