@@ -1,0 +1,13 @@
+{
+  "luci-app-meta": {
+    "description": "管理 mihomo 配置与服务",
+    "read": {
+      "ubus": { "luci.mihomo": ["status", "read", "logs", "cache"] },
+      "uci": ["mihomo"]
+    },
+    "write": {
+      "ubus": { "luci.mihomo": ["check", "save", "action", "autostart", "upload", "download", "update_core", "save_url"] },
+      "uci": ["mihomo"]
+    }
+  }
+}

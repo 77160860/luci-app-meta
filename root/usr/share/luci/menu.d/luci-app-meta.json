@@ -1,0 +1,8 @@
+{
+  "admin/services/mihomo": {
+    "title": "Meta",
+    "order": 60,
+    "action": { "type": "view", "path": "mihomo/panel" },
+    "depends": { "acl": ["luci-app-meta"] }
+  }
+}
