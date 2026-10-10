@@ -114,6 +114,28 @@ running_pid() {
 		jsonfilter -e '@["mihomo"].instances.*.pid' 2>/dev/null | head -n 1
 }
 
+# 进程已运行秒数：系统运行时间减去进程启动时的 jiffies（/proc/<pid>/stat 第 22 字段）。
+process_uptime() {
+	local pid="$1" up stat rest start hz
+	[ -n "$pid" ] && [ -r "/proc/$pid/stat" ] || return 1
+	read -r up _ < /proc/uptime 2>/dev/null || return 1
+	up=${up%.*}
+	case "$up" in '' | *[!0-9]*) return 1 ;; esac
+	stat=$(cat "/proc/$pid/stat" 2>/dev/null) || return 1
+	# comm 字段（第 2 字段）用 () 包裹且可能含空格，去掉它之后 state 成为第 1 个位置参数，
+	# starttime（第 22 字段）即第 20 个位置参数。
+	rest=${stat##*') '}
+	# shellcheck disable=SC2086
+	set -- $rest
+	start=${20}
+	case "$start" in '' | *[!0-9]*) return 1 ;; esac
+	hz=$(getconf CLK_TCK 2>/dev/null)
+	case "$hz" in '' | *[!0-9]*) hz=100 ;; esac
+	start=$((start / hz))
+	[ "$up" -ge "$start" ] || return 1
+	echo $((up - start))
+}
+
 healthy() {
 	# Require a stable live PID across three observations; a respawn is a failure.
 	local first current _attempt
