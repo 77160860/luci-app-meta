@@ -103,6 +103,8 @@ case "$2" in
 		config_error=''
 		settings || config_error="$ERROR"
 		pid=$(running_pid)
+		uptime=''
+		[ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && uptime=$(process_uptime "$pid")
 		boot=0
 		"$INIT" enabled >/dev/null 2>&1 && [ "$(uci -q get mihomo.main.enabled)" = 1 ] && boot=1
 		busy=0
@@ -115,6 +117,7 @@ case "$2" in
 		json_add_string config "$CONFIG"
 		json_add_string revision "$([ -z "$config_error" ] && config_revision)"
 		json_add_string pid "$pid"
+		json_add_string uptime "$uptime"
 		json_add_boolean running "$([ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && echo 1 || echo 0)"
 		json_add_boolean autostart "$boot"
 		json_add_boolean busy "$busy"
